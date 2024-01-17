@@ -1,7 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart' as DotEnv;
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 void main() async {
+  await DotEnv.dotenv.load(fileName: ".env");
+  final storage = FlutterSecureStorage();
+  final apiKey = DotEnv.dotenv.env['OPENAI_API_KEY'];
+
+  if (apiKey != null) {
+    await storage.write(key: 'openai_api_key', value: apiKey);
+  }
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
   runApp(MyApp());
