@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/gpt_service.dart';
 
 class ChatScreen extends StatefulWidget {
   @override
@@ -6,19 +7,35 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen> {
-  final List<String> messages = []; // This will be your chat messages
+  final List<String> messages = [];
   final TextEditingController messageController = TextEditingController();
   final ScrollController scrollController = ScrollController();
+  final GPTService gptService = GPTService(); // Instance of GPTService
 
-  void _sendMessage() {
-    if (messageController.text.isNotEmpty) {
+  void _sendMessage() async {
+    final userMessage = messageController.text;
+    if (userMessage.isNotEmpty) {
       setState(() {
-        messages.add(messageController.text);
+        messages.add('You: $userMessage');
         messageController.clear();
       });
 
+      // Call to GPTService to get the response
+      try {
+        final gptResponse = await gptService.getResponse(userMessage);
+        setState(() {
+          messages.add('GPT: $gptResponse');
+        });
+      } catch (e) {
+        setState(() {
+          messages.add('Error: Failed to get response.');
+          print(e.toString()); // For debugging
+        });
+      }
+
+      // Auto-scroll to latest message
       scrollController.animateTo(
-        scrollController.position.maxScrollExtent,
+        scrollController.position.maxScrollExtent + 100,
         duration: Duration(milliseconds: 300),
         curve: Curves.easeOut,
       );
@@ -38,13 +55,14 @@ class _ChatScreenState extends State<ChatScreen> {
               controller: scrollController,
               itemCount: messages.length,
               itemBuilder: (context, index) {
+                bool isUserMessage = messages[index].startsWith('You:');
                 return Container(
-                  alignment: Alignment.centerRight,
-                  padding: EdgeInsets.fromLTRB(8, 8, 8, 32),
+                  alignment: isUserMessage ? Alignment.centerRight : Alignment.centerLeft,
+                  padding: EdgeInsets.all(8),
                   child: Container(
                     padding: EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
-                      color: Colors.blue,
+                      color: isUserMessage ? Colors.blue : Colors.grey,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
@@ -57,7 +75,7 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           ),
           Padding(
-            padding: EdgeInsets.only(bottom: 16.0), // Adjust this value to increase or decrease the bottom padding
+            padding: EdgeInsets.only(bottom: 16.0),
             child: Container(
               padding: EdgeInsets.all(8),
               child: Row(
